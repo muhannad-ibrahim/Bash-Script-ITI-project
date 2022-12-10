@@ -36,7 +36,7 @@ function create_table {
 		then
 			echo "Number is not correct, please enter a positive number"
 		else
-			for ((i=1; i<$columnNumber; i++))
+			for ((i=1; i<=$columnNumber; i++))
 			do
 				echo "Enter column $i Name"
 				read colName
