@@ -5,19 +5,6 @@ Red='\033[0;31m'
 Green='\033[0;32m'
 DefaultColor='\033[0m'
 
-function create_database {
-	echo "Enter name of the database : "
-	read dbName
-	mkdir -p ~/Bash_project/$dbName	
-	if [[ $? == 0 ]] 					#for checking if it's exist or not 	
-	then	
-		echo "Database $dbName has been created successfully"
-	else
-		echo "Error database $dbName already exists"
-	fi
-	main_menu
-}
-
 function create_table {
 	typeset -i colNum
 	echo "Enter name of the table : "
@@ -132,29 +119,7 @@ function drop_table {
 	tables_menu
 }
 
-function list_databases { 
-	cd ~/Bash_project 2>> /dev/null
-	if [[ $? == 0 ]]
-	then
-		ls  
-	else
-		echo "There's no any database to show, Try to create one :)"
-	fi
-}
 
-function connect_database {
-	echo "Enter name of the database you want to Use: "
-	read dbName
-	cd ~/Bash_project/$dbName 2>> /dev/null	
-	if [[ $? == 0 ]] #for checking if it's exist or not
-	then 		
-		echo "Connected to $dbName successfully"
-		tables_menu
-	else
-		echo "Database $dbName wasn't found"
-		main_menu
-	fi
-}
 
 function tables_menu {
 		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back' 'Exit'
@@ -194,6 +159,43 @@ function drop_database {
 		echo "Database not found"
 	fi
 	main_menu
+}
+
+function create_database {
+	echo "Enter name of the database : "
+	read dbName
+	mkdir -p ~/Bash_project/$dbName	
+	if [[ $? == 0 ]] 					#for checking if it's exist or not 	
+	then	
+		echo "Database $dbName has been created successfully"
+	else
+		echo "Error database $dbName already exists"
+	fi
+	main_menu
+}
+
+function list_databases { 
+	cd ~/Bash_project 2>> /dev/null
+	if [[ $? == 0 ]]
+	then
+		ls  
+	else
+		echo "There's no any database to show, Try to create one :)"
+	fi
+}
+
+function connect_database {
+	echo "Enter name of the database you want to Use: "
+	read dbName
+	cd ~/Bash_project/$dbName 2>> /dev/null	
+	if [[ $? == 0 ]] #for checking if it's exist or not
+	then 		
+		echo "Connected to $dbName successfully"
+		tables_menu
+	else
+		echo "Database $dbName wasn't found"
+		main_menu
+	fi
 }
 
 function main_menu {
