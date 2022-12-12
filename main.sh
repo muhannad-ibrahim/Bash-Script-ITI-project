@@ -5,6 +5,105 @@ Red='\033[0;31m'
 Green='\033[0;32m'
 DefaultColor='\033[0m'
 
+function main_menu {
+	select choice in 'Create Database' 'List Databases' 'Connect To Database' 'Drop Databse' 'Exit'
+	do
+	case $REPLY in
+		1) create_database
+			;;
+		2) list_databases
+			;;
+		3) connect_database
+			;;
+		4) drop_database
+			;;
+		5) exit 
+			;;
+		*) echo -e $Red"Invaild choice"$DefaultColor
+	esac
+	done
+}
+
+function connect_database {
+	echo "Enter name of the database you want to Use: "
+	read dbName
+	cd ~/Bash_project/$dbName 2>> /dev/null	
+	if [[ $? == 0 ]] #for checking if it's exist or not
+	then 		
+		echo -e $Green"Connected to $dbName successfully"$DefaultColor
+		tables_menu
+	else
+		echo -e $Red"Database $dbName wasn't found"$DefaultColor
+		main_menu
+	fi
+}
+
+function create_database {
+	echo "Enter name of the database : "
+	read dbName
+	mkdir -p ~/Bash_project/$dbName	
+	
+	if [[ $? == 0 ]] 	#for checking if it's exist or not 	
+	then	
+		echo -e $Green"Database $dbName has been created successfully"$DefaultColor
+	else
+		echo -e $Red"Error database $dbName already exists"$DefaultColor
+	fi
+	main_menu
+}
+
+function list_databases { 
+	cd ~/Bash_project 2>> /dev/null
+	if [[ $? == 0 ]]
+	then
+		echo -e $Green`ls`$DefaultColor  		
+		main_menu
+	else
+		echo -e $Red"There's no any database to show, Try to create one :)"$DefaultColor
+		main_menu
+	fi
+}
+
+function drop_database { 
+	echo "Enter name of the database you want to drop: "
+	read dbName
+	rm -r ~/Bash_project/$dbName 2>> /dev/null	
+	if [[ $? == 0 ]]  	
+	then
+		echo -e $Green"Database $dbName has been dropped successfully"$DefaultColor
+	else
+		echo -e $Red"Database not found"$DefaultColor
+	fi
+	main_menu
+}
+#******************************************************************************************
+function tables_menu {
+		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back' 'Exit'
+		do
+		case $REPLY in
+			1) create_table
+				;;
+			2) echo "*************" ; echo -e $Green`ls .`$DefaultColor ; echo "*************"; tables_menu
+				;;
+			3) drop_table
+				;;
+			4) insert
+				;;
+			5) #select_from_table 
+				;;
+			6) #delete_from_table
+				;;
+			7) #update_table
+				;;
+			8) clear ; main_menu
+				;;
+			9) exit
+				;;
+			*) echo -e $Red"Invaild choice"$DefaultColor; tables_menu
+		esac
+		done
+}
+
 function create_table {
 	typeset -i colNum
 	echo "Enter name of the table : "
@@ -119,102 +218,80 @@ function drop_table {
 	tables_menu
 }
 
-
-
-function tables_menu {
-		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back' 'Exit'
-		do
-		case $REPLY in
-			1) create_table
-				;;
-			2) echo "*************" ; ls .; echo "*************"; tables_menu
-				;;
-			3) drop_table
-				;;
-			4) #insert_into_table
-				;;
-			5) #select_from_table 
-				;;
-			6) #delete_from_table
-				;;
-			7) #update_table
-				;;
-			8) clear ; main_menu
-				;;
-			9) exit
-				;;
-			*) echo "Invaild choice"
-		esac
-		done
-}
-
-function drop_database { 
-	echo "Enter name of the database you want to drop: "
-	read dbName
-	rm -r ~/Bash_project/$dbName 2>> /dev/null	
-	if [[ $? == 0 ]]  	
-	then
-		echo "Database $dbName has been dropped successfully"
-	else
-		echo "Database not found"
-	fi
-	main_menu
-}
-
-function create_database {
-	echo "Enter name of the database : "
-	read dbName
-	mkdir -p ~/Bash_project/$dbName	
-	if [[ $? == 0 ]] 					#for checking if it's exist or not 	
+function insert {
+	echo "Enter table name: "
+	read tableName
+	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
 	then	
-		echo "Database $dbName has been created successfully"
-	else
-		echo "Error database $dbName already exists"
+		echo -e $Red"Table not found"$DefaultColor
+		tables_menu
 	fi
-	main_menu
-}
+	totalLines=`awk 'END{print NR}' .$tableName`
+	sep="|"
+  	rSep="\n"
 
-function list_databases { 
-	cd ~/Bash_project 2>> /dev/null
+	for ((i=2; i<=$totalLines; i++))
+	do	
+		fieldName=$(awk 'BEGIN{FS="|"}{ if(NR=='$i') print $1}' .$tableName)
+	    	fieldType=$( awk 'BEGIN{FS="|"}{if(NR=='$i') print $2}' .$tableName)
+	    	fieldKey=$( awk 'BEGIN{FS="|"}{if(NR=='$i') print $3}' .$tableName)
+	    	echo -e "$fieldName ($fieldType) = "
+	    	read data
+
+		if [[ $fieldType == "int" ]] 
+		then
+      			while ! [[ $data =~ ^[0-9]*$ ]]
+			do
+        			echo -e $Red"invalid DataType !!"$DefaultColor
+	        		echo -e "$fieldName ($fieldType) = "
+        			read data
+			done
+		elif [[ $fieldType == "str" ]]
+		then
+			while ! [[ $data = +([a-zA-Z0-9_-]) ]]
+			do
+				echo -e $Red"invalid DataType !!"$DefaultColor
+	        		echo -e "$fieldName ($fieldType) = "
+        			read data
+			done
+    		fi
+
+		if [[ $fieldKey == "PK" ]] 
+		then
+		      	while [[ true ]] 
+			do
+				if [[ $data =~ ^[`awk 'BEGIN{FS="|" ; ORS=" "}{if(NR != 1)print $(('$i'-1))}' $tableName`]$ ]]
+				then
+			  		echo -e $Red"invalid input for Primary Key !!"$DefaultColor
+				else
+			  		break;
+				fi
+				echo -e "$fieldName ($fieldType) = "
+				read data
+		      	done
+		fi
+
+			
+		if [[ $i == $totalLines ]] 
+		then
+      			row=$row$data$rSep
+    		else
+      			row=$row$data$sep
+    		fi	
+	done
+	echo -e $row >> $tableName
 	if [[ $? == 0 ]]
 	then
-		ls  
+		echo $Green"Data Inserted Successfully"$DefaultColor
 	else
-		echo "There's no any database to show, Try to create one :)"
+	    	echo $Red"Error Inserting Data into Table $tableName"$DefaultColor
 	fi
+	
+	row=""
+	tables_menu
 }
 
-function connect_database {
-	echo "Enter name of the database you want to Use: "
-	read dbName
-	cd ~/Bash_project/$dbName 2>> /dev/null	
-	if [[ $? == 0 ]] #for checking if it's exist or not
-	then 		
-		echo "Connected to $dbName successfully"
-		tables_menu
-	else
-		echo "Database $dbName wasn't found"
-		main_menu
-	fi
-}
 
-function main_menu {
-	select choice in 'Create Database' 'List Databases' 'Connect To Database' 'Drop Databse' 'Exit'
-	do
-	case $REPLY in
-		1) create_database
-			;;
-		2) list_databases
-			;;
-		3) connect_database
-			;;
-		4) drop_database
-			;;
-		5) exit 
-			;;
-		*) echo "Invaild choice"
-	esac
-	done
-}
+
 
 main_menu
