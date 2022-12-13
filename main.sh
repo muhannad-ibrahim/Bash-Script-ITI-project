@@ -111,11 +111,11 @@ function create_table {
 	
 	if [[ $tableName != +([a-zA-Z0-9_-]) ]] # in MySQL there is no naming conventions on tables we can remove this check
 	then	
-		echo "Only use characters, numbers dash and underscore"
+		echo -e $Red"Only use characters, numbers dash and underscore"$DefaultColor
 	
 	elif [[ -f ~/Bash_project/$dbName/$tableName ]] #for checking if it's exist or not 	
 	then	
-		echo "Error table $tableName already exists"
+		echo -e $Red"Error table $tableName already exists"$DefaultColor
 	
 	else 
 		sep="|" 							# used to be the seperator between data  
@@ -128,7 +128,7 @@ function create_table {
 
 		if [[ $columnNumber != +([0-9]) || $columnNumber -eq 0 ]]
 		then
-			echo "Number is not correct, please enter a positive number"
+			echo -e $Red"Number is not correct, please enter a positive number"$DefaultColor
 		
 		else
 			for ((i=1; i<=$columnNumber; i++))
@@ -137,7 +137,7 @@ function create_table {
 				read colName
 				if [[ $colName != +([a-zA-Z0-9_-]) ]]
 				then
-					echo "Enter a vaild column name"
+					echo -e $Red"Enter a vaild column name"$DefaultColor
 				else
 					echo "Enter column $i Datatype of $colName"
 					select choice in "str" "int"
@@ -149,7 +149,7 @@ function create_table {
 							2) colDataType="int"
 								break
 								;;
-							*) echo "Wrong data type"
+							*) echo -e $Red"Wrong data type"$DefaultColor
 						esac
 					done
 					
@@ -186,10 +186,10 @@ function create_table {
 		if [[ $? == 0 ]]
 		then
 			clear
-			echo "Table Created Successfully"
+			echo -e $Green"Table Created Successfully"$DefaultColor
 			tables_menu
 		else
-			echo "Error Creating Table $tableName"
+			echo -e $Red"Error Creating Table $tableName"$DefaultColor
 			tables_menu
 		fi			
 	fi
@@ -226,65 +226,67 @@ function insert {
 		echo -e $Red"Table not found"$DefaultColor
 		tables_menu
 	fi
-	totalLines=`awk 'END{print NR}' .$tableName`
+	totalLines=`awk 'END{print NR}' ~/Bash_project/$dbName/.$tableName`
 	sep="|"
   	rSep="\n"
+	typeset -i pk=$i-1
 
 	for ((i=2; i<=$totalLines; i++))
 	do	
-		fieldName=$(awk 'BEGIN{FS="|"}{ if(NR=='$i') print $1}' .$tableName)
-	    	fieldType=$( awk 'BEGIN{FS="|"}{if(NR=='$i') print $2}' .$tableName)
-	    	fieldKey=$( awk 'BEGIN{FS="|"}{if(NR=='$i') print $3}' .$tableName)
-	    	echo -e "$fieldName ($fieldType) = "
-	    	read data
+		fieldName=$(awk -F$sep 'NR=='$i' {print $1}' .$tableName)       # instead of using {if NR=='$i' print $1} use shorthand NR=='$i'
+ 	    	fieldDataType=$( awk -F$sep 'NR=='$i' {print $2}' .$tableName)
+	    	fieldKey=$( awk -F$sep 'NR=='$i' {print $3}' .$tableName)
+	    	echo -e "$fieldName ($fieldDataType) = "
+	    	read InsertedData
 
-		if [[ $fieldType == "int" ]] 
+		if [[ $fieldDataType == "int" ]] 
 		then
-      			while ! [[ $data =~ ^[0-9]*$ ]]
+      			while [[ $InsertedData != +([0-9]) ]]
 			do
-        			echo -e $Red"invalid DataType !!"$DefaultColor
-	        		echo -e "$fieldName ($fieldType) = "
-        			read data
+        			echo -e $Red"Invalid DataType !!"$DefaultColor
+	        		echo -e "$fieldName ($fieldDataType) = "
+        			read InsertedData
 			done
-		elif [[ $fieldType == "str" ]]
+		elif [[ $fieldDataType == "str" ]]
 		then
-			while ! [[ $data = +([a-zA-Z0-9_-]) ]]
+			while [[ $InsertedData != +([a-zA-Z0-9_-]) ]]
 			do
-				echo -e $Red"invalid DataType !!"$DefaultColor
-	        		echo -e "$fieldName ($fieldType) = "
-        			read data
+				echo -e $Red"Invalid DataType !!"$DefaultColor
+	        		echo -e "$fieldName ($fieldDataType) = "
+        			read InsertedData
 			done
     		fi
 
 		if [[ $fieldKey == "PK" ]] 
 		then
 		      	while [[ true ]] 
-			do
-				if [[ $data =~ ^[`awk 'BEGIN{FS="|" ; ORS=" "}{if(NR != 1)print $(('$i'-1))}' $tableName`]$ ]]
+			do	
+				typeset -i pk=$i-1
+				if [[ $InsertedData == `cut -d"|" -f"$pk" ~/Bash_project/$dbName/$tableName | grep -w $InsertedData` ]]
 				then
-			  		echo -e $Red"invalid input for Primary Key !!"$DefaultColor
+			  		echo -e $Red"Invalid input for Primary Key !!"$DefaultColor
 				else
 			  		break;
 				fi
-				echo -e "$fieldName ($fieldType) = "
-				read data
+				echo -e "$fieldName ($fieldDataType) = "
+				read InsertedData
 		      	done
 		fi
 
 			
 		if [[ $i == $totalLines ]] 
 		then
-      			row=$row$data$rSep
+      			row=$row$InsertedData$rSep
     		else
-      			row=$row$data$sep
+      			row=$row$InsertedData$sep
     		fi	
 	done
 	echo -e $row >> $tableName
 	if [[ $? == 0 ]]
 	then
-		echo $Green"Data Inserted Successfully"$DefaultColor
+		echo -e $Green"Data Inserted Successfully"$DefaultColor
 	else
-	    	echo $Red"Error Inserting Data into Table $tableName"$DefaultColor
+	    	echo -e $Red"Error Inserting Data into Table $tableName"$DefaultColor
 	fi
 	
 	row=""
