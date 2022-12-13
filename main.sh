@@ -89,7 +89,7 @@ function tables_menu {
 				;;
 			4) insert
 				;;
-			5) #select_from_table 
+			5) select_from_table 
 				;;
 			6) #delete_from_table
 				;;
@@ -293,7 +293,38 @@ function insert {
 	tables_menu
 }
 
+function select_from_table { 
+	clear
+	select choice in "Select All Data" "Select specfic records" "Back to tables menu" "Back to main menu" "Exit"
+	do
+	case $REPLY in
+	1) select_all_data
+		break
+		;;
+	2) select_specific_records
+		break
+		;;
+	3) tables_menu
+		;;
+	4) main_menu
+		;;
+	5) exit
+		;;
+	*) echo -e $Red"Invalid option"$DefaultColor
+	esac
+	done
+}
 
-
-
+function select_all_data {
+	echo "Table name to select from: "
+	read tableName
+	if [[ -f ~/Bash_project/$dbName/$tableName ]]	
+	then
+                column -t -s"|" -o"  |  " ~/Bash_project/$dbName/$tableName
+	else
+		echo -e $Red"Table not found"$DefaultColor
+	fi
+	tables_menu
+}
+	
 main_menu
