@@ -6,6 +6,7 @@ Green='\033[0;32m'
 DefaultColor='\033[0m'
 
 function main_menu {
+	COLUMNS=12
 	select choice in 'Create Database' 'List Databases' 'Connect To Database' 'Drop Databse' 'Exit'
 	do
 	case $REPLY in
@@ -25,7 +26,8 @@ function main_menu {
 }
 
 function connect_database {
-	echo "Enter name of the database you want to Use: "
+	# read -p "Enter name of the database you want to Use: " dbName
+	echo -n "Enter name of the database you want to Use : "
 	read dbName
 	cd ~/Bash_project/$dbName 2>> /dev/null	
 	if [[ $? == 0 ]] #for checking if it's exist or not
@@ -39,7 +41,7 @@ function connect_database {
 }
 
 function create_database {
-	echo "Enter name of the database : "
+	echo -n "Enter name of the database : "
 	read dbName
 	mkdir -p ~/Bash_project/$dbName	
 	
@@ -65,7 +67,7 @@ function list_databases {
 }
 
 function drop_database { 
-	echo "Enter name of the database you want to drop: "
+	echo -n "Enter name of the database you want to drop : "
 	read dbName
 	rm -r ~/Bash_project/$dbName 2>> /dev/null	
 	if [[ $? == 0 ]]  	
@@ -78,6 +80,7 @@ function drop_database {
 }
 #******************************************************************************************
 function tables_menu {
+		COLUMNS=12
 		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back' 'Exit'
 		do
 		case $REPLY in
@@ -106,7 +109,7 @@ function tables_menu {
 
 function create_table {
 	typeset -i colNum
-	echo "Enter name of the table : "
+	echo -n "Enter name of the table : "
 	read tableName
 	
 	if [[ $tableName != +([a-zA-Z0-9_-]) ]] # in MySQL there is no naming conventions on tables we can remove this check
@@ -123,7 +126,7 @@ function create_table {
   		pKey="" 							# used to be primary key
   		metaData="Field"$sep"Type"$sep"key" # used to collect the tuple of data 
 
-		echo "Enter the number of columns"
+		echo -n "Enter the number of columns : "
 		read columnNumber
 
 		if [[ $columnNumber != +([0-9]) || $columnNumber -eq 0 ]]
@@ -133,13 +136,13 @@ function create_table {
 		else
 			for ((i=1; i<=$columnNumber; i++))
 			do
-				echo "Enter column $i Name"
+				echo -n "Enter column $i Name : "
 				read colName
 				if [[ $colName != +([a-zA-Z0-9_-]) ]]
 				then
 					echo -e $Red"Enter a vaild column name"$DefaultColor
 				else
-					echo "Enter column $i Datatype of $colName"
+					echo "Enter column $i Datatype of $colName : "
 					select choice in "str" "int"
 					do
 						case $REPLY in
@@ -206,7 +209,7 @@ function create_table {
 #}
 
 function drop_table { 
-	echo "Enter name of the table you want to drop: "
+	echo -n "Enter name of the table you want to drop : "
 	read tableName
 	if [[ -f ~/Bash_project/$dbName/$tableName ]]	
 	then
@@ -219,7 +222,7 @@ function drop_table {
 }
 
 function insert {
-	echo "Enter table name: "
+	echo -n "Enter table name : "
 	read tableName
 	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
 	then	
@@ -294,7 +297,7 @@ function insert {
 }
 
 function update {
-	echo "Enter table name: "
+	echo -n "Enter table name : "
 	read tableName
 	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
 	then	
@@ -303,7 +306,7 @@ function update {
 	fi
 	sep="|"
 	
-	echo "Enter name of condition field : "
+	echo -n "Enter name of condition field : "
 	read condition
 
 	fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
@@ -313,7 +316,7 @@ function update {
 		echo  -e $Red"cannot find the field"$DefaultColor
 		tables_menu
 	else
-		echo -e "Enter Value of condition field : "
+		echo -n "Enter Value of condition field : "
 		read value
 		
 		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
@@ -327,7 +330,7 @@ function update {
 			tables_menu
 		else
 				
-			echo -e "Enter name of field you want to assign value to it : "
+			echo -n "Enter name of field you want to assign value to it : "
 			read field
 		
 			newField=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$field'") print i}}}' $tableName 2>> /dev/null) #return column number of field entered by user just in first line that contains attributes name
@@ -338,7 +341,7 @@ function update {
 				tables_menu
 			else
 				isKey=$(awk -F$sep '{if($1=="'$field'") print $3}' .$tableName 2>> /dev/null)
-				echo -e "Enter name of new value : "
+				echo -n "Enter name of new value : "
         			read newValue
 
 				if [[ $isKey == "PK" ]] 
@@ -351,7 +354,7 @@ function update {
 						else
 					  		break;
 						fi
-						echo -e "Enter name of new value again : "
+						echo -n "Enter name of new value again : "
 						read newValue
 				      	done
 				fi
@@ -371,6 +374,7 @@ function update {
 
 function select_from_table { 
 	clear
+	COLUMNS=12
 	select choice in "Select All Data" "Select specfic records" "Back to tables menu" "Back to main menu" "Exit"
 	do
 	case $REPLY in
@@ -392,7 +396,7 @@ function select_from_table {
 }
 
 function select_all_data {
-	echo "Table name to select from: "
+	echo -n "Table name to select from : "
 	read tableName
 	if [[ -f ~/Bash_project/$dbName/$tableName ]]	
 	then
