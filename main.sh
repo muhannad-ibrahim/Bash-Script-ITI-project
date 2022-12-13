@@ -93,7 +93,7 @@ function tables_menu {
 				;;
 			6) #delete_from_table
 				;;
-			7) #update_table
+			7) update
 				;;
 			8) clear ; main_menu
 				;;
@@ -291,6 +291,82 @@ function insert {
 	
 	row=""
 	tables_menu
+}
+
+function update {
+	echo "Enter table name: "
+	read tableName
+	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
+	then	
+		echo -e $Red"Table not found"$DefaultColor
+		tables_menu
+	fi
+	sep="|"
+	
+	echo "Enter name of condition field : "
+	read condition
+
+	fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
+
+	if [[ $fieldNumber ==  "" ]]
+	then
+		echo  -e $Red"cannot find the field"$DefaultColor
+		tables_menu
+	else
+		echo -e "Enter Value of condition field : "
+		read value
+		
+		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
+
+		lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
+
+		if [[ $columnNumber == "" ]]
+		then
+			
+			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
+			tables_menu
+		else
+				
+			echo -e "Enter name of field you want to assign value to it : "
+			read field
+		
+			newField=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$field'") print i}}}' $tableName 2>> /dev/null) #return column number of field entered by user just in first line that contains attributes name
+			
+			if [[ $newField == "" ]]
+			then
+				echo  -e $Red"cannot find the field"$DefaultColor
+				tables_menu
+			else
+				isKey=$(awk -F$sep '{if($1=="'$field'") print $3}' .$tableName 2>> /dev/null)
+				echo -e "Enter name of new value : "
+        			read newValue
+
+				if [[ $isKey == "PK" ]] 
+				then
+				      	while [[ true ]] 
+					do	
+						if [[ $newValue == `cut -d"|" -f"$newField" ~/Bash_project/$dbName/$tableName | grep -w $newValue` ]]
+						then
+					  		echo -e $Red"This value cannot be dublicated, It's a primary key !!"$DefaultColor
+						else
+					  		break;
+						fi
+						echo -e "Enter name of new value again : "
+						read newValue
+				      	done
+				fi
+													
+				oldValue=$(awk -F$sep '{if(NR=='$lineNumber'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
+				echo $oldValue
+				
+				sed -i ''$lineNumber's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
+				echo "Row Updated Successfully"
+				tables_menu
+		
+			fi
+		fi		
+	fi
+	
 }
 
 function select_from_table { 
