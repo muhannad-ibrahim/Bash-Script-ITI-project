@@ -384,10 +384,10 @@ function select_from_table {
 	1) clear ; select_all_data
 		break
 		;;
-	2) clear ; select_specific_records
+	2) clear ; select_one_column
 		break
 		;;
-	3) clear ; tables_menu
+	3) clear ; select_many_columns
 		;;
 	4) clear ; main_menu
 		;;
@@ -411,5 +411,67 @@ function select_all_data {
 	fi
 	tables_menu
 }
+
+function select_one_column {
+	echo -n "Table name to select from : "
+	read tableName
+	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]
+	then
+		echo -e $Red"Enter a correct Table Name"$DefaultColor
+		select_one_column
+	fi
+
+	if [[ -f ~/Bash_project/$dbName/$tableName ]]	
+	then
+		echo -n "column name : "
+		read columnN
+		typeset -i fieldNum=$(awk -F "|" 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$columnN'") print i}' ~/Bash_project/$dbName/$tableName)
+		if ! [[ $fieldNum -eq 0 ]]
+		then
+			cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName
+		#awk -F "|" '{print $'$fieldNum'}' ~/Bash_project/$dbName/$tableName
+		else
+			echo -e $Red"Enter a correct column Name"$DefaultColor
+		fi
+	else
+		echo -e $Red"Table not found"$DefaultColor
+	fi
+	tables_menu
+}
 	
+function select_many_columns {
+	echo -n "Table name to select from : "
+	read tableName
+	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]
+	then
+		echo -e $Red"Enter a correct Table Name"$DefaultColor
+		select_one_column
+	fi
+
+	typeset -i TotalFields=$(awk -F "|" 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
+	echo -n "Number of columns : "
+	read NumOfCols
+	if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
+	then
+		for ((i=1; i<=NumOfCols; i++))
+		do
+			echo -n "Enter $i column : "
+			read selectedCols
+
+
+			typeset -i fieldNum=$(awk -F "|" 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$selectedCols'") print i}' ~/Bash_project/$dbName/$tableName)
+			if ! [[ $fieldNum -eq 0 ]]
+			then
+				#cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName
+				awk -F "|" '{print $'$fieldNum'":"}' ~/Bash_project/$dbName/$tableName
+			else
+				echo -e $Red"Enter a correct column Name"$DefaultColor
+				select_many_columns
+			fi
+		done
+		else
+			echo -e $Red"Enter a correct column Name"$DefaultColor
+	fi
+select_many_columns
+}
 main_menu
