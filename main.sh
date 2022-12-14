@@ -10,15 +10,15 @@ function main_menu {
 	select choice in 'Create Database' 'List Databases' 'Connect To Database' 'Drop Databse' 'Exit'
 	do
 	case $REPLY in
-		1) create_database
+		1) clear ; create_database
 			;;
-		2) list_databases
+		2) clear ; list_databases
 			;;
-		3) connect_database
+		3) clear ; connect_database
 			;;
-		4) drop_database
+		4) clear ; drop_database
 			;;
-		5) exit 
+		5) clear ; exit 
 			;;
 		*) echo -e $Red"Invaild choice"$DefaultColor
 	esac
@@ -31,7 +31,7 @@ function connect_database {
 	read dbName
 	cd ~/Bash_project/$dbName 2>> /dev/null	
 	if [[ $? == 0 ]] #for checking if it's exist or not
-	then 		
+	then 	
 		echo -e $Green"Connected to $dbName successfully"$DefaultColor
 		tables_menu
 	else
@@ -58,7 +58,9 @@ function list_databases {
 	cd ~/Bash_project 2>> /dev/null
 	if [[ $? == 0 ]]
 	then
-		echo -e $Green`ls`$DefaultColor  		
+		echo "********************* Databases *********************"
+		echo -e $Green`ls`$DefaultColor
+		echo "*****************************************************"  		
 		main_menu
 	else
 		echo -e $Red"There's no any database to show, Try to create one :)"$DefaultColor
@@ -84,23 +86,24 @@ function tables_menu {
 		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back' 'Exit'
 		do
 		case $REPLY in
-			1) create_table
+			1) clear ; create_table
 				;;
-			2) echo "*************" ; echo -e $Green`ls .`$DefaultColor ; echo "*************"; tables_menu
+			2) clear ; echo "********************* Tables *********************" ; echo -e $Green`ls .`$DefaultColor ; 
+			   echo "**************************************************"; tables_menu
 				;;
-			3) drop_table
+			3) clear ; drop_table
 				;;
-			4) insert
+			4) clear ; insert
 				;;
-			5) select_from_table 
+			5) clear ; select_from_table 
 				;;
 			6) #delete_from_table
 				;;
-			7) update
+			7) clear ; update
 				;;
 			8) clear ; main_menu
 				;;
-			9) exit
+			9) clear ; exit
 				;;
 			*) echo -e $Red"Invaild choice"$DefaultColor; tables_menu
 		esac
@@ -378,17 +381,17 @@ function select_from_table {
 	select choice in "Select All Data" "Select specfic records" "Back to tables menu" "Back to main menu" "Exit"
 	do
 	case $REPLY in
-	1) select_all_data
+	1) clear ; select_all_data
 		break
 		;;
-	2) select_specific_records
+	2) clear ; select_specific_records
 		break
 		;;
-	3) tables_menu
+	3) clear ; tables_menu
 		;;
-	4) main_menu
+	4) clear ; main_menu
 		;;
-	5) exit
+	5) clear ; exit
 		;;
 	*) echo -e $Red"Invalid option"$DefaultColor
 	esac
@@ -400,7 +403,9 @@ function select_all_data {
 	read tableName
 	if [[ -f ~/Bash_project/$dbName/$tableName ]]	
 	then
+		echo " "
                 column -t -s"|" -o"  |  " ~/Bash_project/$dbName/$tableName
+		echo " "
 	else
 		echo -e $Red"Table not found"$DefaultColor
 	fi
