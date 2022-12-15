@@ -378,7 +378,7 @@ function update {
 function select_from_table { 
 	clear
 	COLUMNS=12
-	select choice in "Select All Data" "Select specfic records" "Back to tables menu" "Back to main menu" "Exit"
+	select choice in "Select All Data" "Select specfic records" "Select many records" "Back to tables menu" "Back to main menu" "Exit"
 	do
 	case $REPLY in
 	1) clear ; select_all_data
@@ -458,28 +458,37 @@ function select_many_columns {
 			echo -n "Enter $i column : "
 			read selectedCols
 
-
 			typeset -i fieldNum=$(awk -F "|" 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$selectedCols'") print i}' ~/Bash_project/$dbName/$tableName)
 			if ! [[ $fieldNum -eq 0 ]]
 			then
-			cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName >> newfile
-			#echo -n `awk -F "|" '{print $'$fieldNum'":"}' ~/Bash_project/$dbName/$tableName` >> newfile3
+				echo `cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName` >> newfile
+				
+				#echo -n `awk -F "|" '{print $'$fieldNum'":"}' ~/Bash_project/$dbName/$tableName` >> newfile3
 			else
 				echo -e $Red"Enter a correct column Name"$DefaultColor
 				select_many_columns
 			fi
 		done
-	typeset -i j=1
-	for ((j=1; j<100; j=j+5))
-	do
-		echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
-	done
-	for ((j=2; j<100; j=j+2))
-	do
-		echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
-	done
-		else
-			echo -e $Red"Enter a correct column Name"$DefaultColor
+		numCols=`awk '{ if(NR==1) print NF}' newfile`
+
+		for ((j=1; j<=numCols; j++))
+		do
+			echo `cut -f"$j" -d" " newfile`
+		done
+		`rm newfile`
+		
+		#typeset -i j=1
+		#for ((j=1; j<100; j=j+5))
+		#do
+		#	echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
+		#done
+		
+		#for ((j=2; j<100; j=j+2))
+		#do
+		#	echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
+		#done
+	else
+		echo -e $Red"Enter a correct column Name"$DefaultColor
 	fi
 select_many_columns
 }
