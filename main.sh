@@ -389,7 +389,7 @@ function select_from_table {
 		;;
 	3) clear ; select_many_columns
 		;;
-	4) clear ; main_menu
+	4) clear ; select_with_condition
 		;;
 	5) clear ; exit
 		;;
@@ -462,16 +462,71 @@ function select_many_columns {
 			typeset -i fieldNum=$(awk -F "|" 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$selectedCols'") print i}' ~/Bash_project/$dbName/$tableName)
 			if ! [[ $fieldNum -eq 0 ]]
 			then
-				#cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName
-				awk -F "|" '{print $'$fieldNum'":"}' ~/Bash_project/$dbName/$tableName
+			cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName >> newfile
+			#echo -n `awk -F "|" '{print $'$fieldNum'":"}' ~/Bash_project/$dbName/$tableName` >> newfile3
 			else
 				echo -e $Red"Enter a correct column Name"$DefaultColor
 				select_many_columns
 			fi
 		done
+	typeset -i j=1
+	for ((j=1; j<100; j=j+5))
+	do
+		echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
+	done
+	for ((j=2; j<100; j=j+2))
+	do
+		echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
+	done
 		else
 			echo -e $Red"Enter a correct column Name"$DefaultColor
 	fi
 select_many_columns
 }
+
+
+function select_with_condition {
+	echo -n "Enter table name : "
+	read tableName
+	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
+	then	
+		echo -e $Red"Table not found"$DefaultColor
+		tables_menu
+	fi
+	sep="|"
+	
+	echo -n "Enter name of condition field : "
+	read condition
+
+	fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
+
+	if [[ $fieldNumber ==  "" ]]
+	then
+		echo  -e $Red"cannot find the field"$DefaultColor
+		tables_menu
+	else
+		echo -n "Enter Value of condition field : "
+		read value
+		
+		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
+
+		lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
+
+		if [[ $columnNumber == "" ]]
+		then
+			
+			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
+			tables_menu
+		else
+			awk -F"|" 'NR=="1" {print $0}' ~/Bash_project/$dbName/$tableName | column -t -s"|"
+			awk -F"|" '{if ($'$fieldNumber'=="'$value'") print $0 }' ~/Bash_project/$dbName/$tableName | column -t -s"|"		
+
+fi
+fi
+}
+
+
+
+
+
 main_menu
