@@ -97,7 +97,7 @@ function tables_menu {
 				;;
 			5) clear ; select_from_table 
 				;;
-			6) #delete_from_table
+			6) clear ; delete_from_table
 				;;
 			7) clear ; update
 				;;
@@ -534,8 +534,75 @@ fi
 fi
 }
 
+function delete_from_table {
+	select choice in "Delte all records" "Delete with condition"
+	do
+	case $REPLY in
+	1) delete_all_records
+		break
+		;;
+	2) delete_with_condition
+	esac
+	done	
+}
 
+function delete_all_records {
+	echo -n "Enter table name : "
+	read tableName
+	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
+	then	
+		echo -e $Red"Table not found"$DefaultColor
+		delete_all_records
+	else
+		sed -i '2,$d' ~/Bash_project/$dbName/$tableName
+		echo -e $Green"All Records Deleted Successfully"$DefaultColor
+		tables_menu
+	fi
+}
 
+function delete_with_condition {
+	echo -n "Enter table name to delete from : "
+	read tableName
+	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
+	then	
+		echo -e $Red"Table not found"$DefaultColor
+		delete_with_condition
+	fi
+	sep="|"
+	
+	echo -n "Enter name of condition field : "
+	read condition
 
+	fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
 
+	if [[ $fieldNumber ==  "" ]]
+	then
+		echo  -e $Red"cannot find the field"$DefaultColor
+		delete_with_condition
+	else
+		echo -n "Enter Value of condition field : "
+		read value
+		
+		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
+
+		lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
+
+		if [[ $columnNumber == "" ]]
+		then
+			
+			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
+			delete_with_condition
+		else
+			for lineNum in $lineNumber
+			do	
+				sed -i "$lineNumber d" ~/Bash_project/$dbName/$tableName
+				lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
+				#sed -i ''$lineNum',$d' ~/Bash_project/$dbName/$tableName
+			done
+			echo -e $Green"Records Deleted Successfully"$DefaultColor
+			tables_menu
+
+fi
+fi
+}
 main_menu
