@@ -80,7 +80,9 @@ function drop_database {
 	fi
 	main_menu
 }
-#******************************************************************************************
+
+#***************************************************************************************************************************
+
 function tables_menu {
 		COLUMNS=12
 		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back' 'Exit'
@@ -124,9 +126,9 @@ function create_table {
 		echo -e $Red"Error table $tableName already exists"$DefaultColor
 	
 	else 
-		sep="|" 							# used to be the seperator between data  
-  		rSep="\n"							# used to new line 	
-  		pKey="" 							# used to be primary key
+		sep="|" 		# used to be the seperator between data  
+  		rSep="\n"		# used to new line 	
+  		pKey="" 		# used to be primary key
   		metaData="Field"$sep"Type"$sep"key" # used to collect the tuple of data 
 
 		echo -n "Enter the number of columns : "
@@ -201,16 +203,6 @@ function create_table {
 	fi
 }
 
-#function list_tables { 
-#	cd ~/Bash_project/$dbName 2>> /dev/null
-#	if [[ $? == 0 ]]
-#	then
-#		ls
-#	else
-#		echo "There's no any tables to show, Try to create one :)"
-#	fi
-#}
-
 function drop_table { 
 	echo -n "Enter name of the table you want to drop : "
 	read tableName
@@ -223,6 +215,8 @@ function drop_table {
 	fi
 	tables_menu
 }
+
+#***************************************************************************************************************************
 
 function insert {
 	echo -n "Enter table name : "
@@ -375,6 +369,8 @@ function update {
 	
 }
 
+#***************************************************************************************************************************
+
 function select_from_table { 
 	clear
 	COLUMNS=12
@@ -428,8 +424,7 @@ function select_one_column {
 		typeset -i fieldNum=$(awk -F "|" 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$columnN'") print i}' ~/Bash_project/$dbName/$tableName)
 		if ! [[ $fieldNum -eq 0 ]]
 		then
-			cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName
-		#awk -F "|" '{print $'$fieldNum'}' ~/Bash_project/$dbName/$tableName
+			cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName\
 		else
 			echo -e $Red"Enter a correct column Name"$DefaultColor
 		fi
@@ -462,8 +457,6 @@ function select_many_columns {
 			if ! [[ $fieldNum -eq 0 ]]
 			then
 				echo `cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName` >> newfile
-				
-				#echo -n `awk -F "|" '{print $'$fieldNum'":"}' ~/Bash_project/$dbName/$tableName` >> newfile3
 			else
 				echo -e $Red"Enter a correct column Name"$DefaultColor
 				select_many_columns
@@ -476,21 +469,11 @@ function select_many_columns {
 			echo `cut -f"$j" -d" " newfile`
 		done
 		`rm newfile`
-		
-		#typeset -i j=1
-		#for ((j=1; j<100; j=j+5))
-		#do
-		#	echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
-		#done
-		
-		#for ((j=2; j<100; j=j+2))
-		#do
-		#	echo -n `awk -F" " 'NR=='$j' {print $(1)":"}' newfile` >> newfile2
-		#done
+
 	else
 		echo -e $Red"Enter a correct column Name"$DefaultColor
 	fi
-select_many_columns
+	select_many_columns
 }
 
 
@@ -530,9 +513,11 @@ function select_with_condition {
 			awk -F"|" 'NR=="1" {print $0}' ~/Bash_project/$dbName/$tableName | column -t -s"|"
 			awk -F"|" '{if ($'$fieldNumber'=="'$value'") print $0 }' ~/Bash_project/$dbName/$tableName | column -t -s"|"		
 
-fi
-fi
+		fi
+	fi
 }
+
+#***************************************************************************************************************************
 
 function delete_from_table {
 	select choice in "Delte all records" "Delete with condition"
@@ -593,16 +578,29 @@ function delete_with_condition {
 			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
 			delete_with_condition
 		else
-			for lineNum in $lineNumber
+			while [[ $lineNumber != "" ]] 
 			do	
-				sed -i "$lineNumber d" ~/Bash_project/$dbName/$tableName
+				lineNum=$( awk 'BEGIN{FS="|"} {if ($'$fieldNumber'=="'$value'") print NR }' $tableName | sed -n '1p')
+				sed -i "$lineNum d" ~/Bash_project/$dbName/$tableName
 				lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
-				#sed -i ''$lineNum',$d' ~/Bash_project/$dbName/$tableName
-			done
+		      	done
+	
 			echo -e $Green"Records Deleted Successfully"$DefaultColor
 			tables_menu
 
-fi
-fi
+		fi
+	fi
 }
-main_menu
+
+
+main_menu #to call main menu function at the first run !
+
+
+
+
+
+
+
+
+
+
