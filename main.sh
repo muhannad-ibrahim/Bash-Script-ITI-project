@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 shopt -s extglob
 export LC_COLLATE=C
 Red='\033[0;31m'
@@ -366,28 +366,26 @@ function update {
 			fi
 		fi		
 	fi
-	
 }
 
 #***************************************************************************************************************************
 
 function select_from_table { 
-	clear
 	COLUMNS=12
-	select choice in "Select All Data" "Select specfic records" "Select many records" "Back to tables menu" "Back to main menu" "Exit"
+	select choice in "Select All Data" "Select records without condition" "Select records with condition" "Back to tables menu" "Back to main menu" "Exit"
 	do
 	case $REPLY in
 	1) clear ; select_all_data
-		break
 		;;
-	2) clear ; select_one_column
-		break
+	2) clear ; select_without_condition
 		;;
-	3) clear ; select_many_columns
+	3) clear ; select_with_condition
 		;;
-	4) clear ; select_with_condition
+	4) clear ; tables_menu
 		;;
-	5) clear ; exit
+	5) clear ; main_menu
+		;;
+	6) clear ; exit
 		;;
 	*) echo -e $Red"Invalid option"$DefaultColor
 	esac
@@ -405,42 +403,16 @@ function select_all_data {
 	else
 		echo -e $Red"Table not found"$DefaultColor
 	fi
-	tables_menu
-}
-
-function select_one_column {
-	echo -n "Table name to select from : "
-	read tableName
-	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]
-	then
-		echo -e $Red"Enter a correct Table Name"$DefaultColor
-		select_one_column
-	fi
-
-	if [[ -f ~/Bash_project/$dbName/$tableName ]]	
-	then
-		echo -n "column name : "
-		read columnN
-		typeset -i fieldNum=$(awk -F "|" 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$columnN'") print i}' ~/Bash_project/$dbName/$tableName)
-		if ! [[ $fieldNum -eq 0 ]]
-		then
-			cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName\
-		else
-			echo -e $Red"Enter a correct column Name"$DefaultColor
-		fi
-	else
-		echo -e $Red"Table not found"$DefaultColor
-	fi
-	tables_menu
+select_from_table
 }
 	
-function select_many_columns {
+function select_without_condition {
 	echo -n "Table name to select from : "
 	read tableName
 	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]
 	then
 		echo -e $Red"Enter a correct Table Name"$DefaultColor
-		select_one_column
+		select_without_condition
 	fi
 
 	typeset -i TotalFields=$(awk -F "|" 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
@@ -473,7 +445,7 @@ function select_many_columns {
 	else
 		echo -e $Red"Enter a correct column Name"$DefaultColor
 	fi
-	select_many_columns
+select_from_table
 }
 
 
@@ -487,9 +459,12 @@ function select_with_condition {
 	fi
 	sep="|"
 	
+	typeset -i TotalFields=$(awk -F "|" 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
+	echo -n "Number of columns : "
+	read NumOfCols
+
 	echo -n "Enter name of condition field : "
 	read condition
-
 	fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
 
 	if [[ $fieldNumber ==  "" ]]
@@ -499,22 +474,48 @@ function select_with_condition {
 	else
 		echo -n "Enter Value of condition field : "
 		read value
-		
 		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
-
-		lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
-
+		
 		if [[ $columnNumber == "" ]]
 		then
 			
 			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
 			tables_menu
 		else
-			awk -F"|" 'NR=="1" {print $0}' ~/Bash_project/$dbName/$tableName | column -t -s"|"
-			awk -F"|" '{if ($'$fieldNumber'=="'$value'") print $0 }' ~/Bash_project/$dbName/$tableName | column -t -s"|"		
+			if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
+			then
+				for ((i=1; i<=NumOfCols; i++))
+				do
+					echo -n "Enter $i selected column name: "
+					read selectedCols
 
+					fieldNum=$(awk -F$sep 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$selectedCols'") print i}' ~/Bash_project/$dbName/$tableName)
+					if ! [[ $fieldNum -eq 0 ]]
+					then
+						awk -F$sep 'NR=="1" {print $'$fieldNum'}' $tableName >> newfile
+						awk -F$sep '{for(i=1; i<=NF; i++) if($i=="'$value'") print $'$fieldNum' }' $tableName >> newfile
+						echo `cut -f1 newfile` >> newfile2
+						`rm newfile`
+					else
+						echo -e $Red"Enter a correct column Name"$DefaultColor
+						select_many_columns
+					fi
+				done
+
+				numCols=`awk '{ if(NR==1) print NF}' newfile2`
+				for ((j=1; j<=numCols; j++))
+				do
+					echo `cut -f"$j" -d" " newfile2`
+				done
+				`rm newfile2`
+
+			else
+				echo -e $Red"Enter a correct column Name"$DefaultColor
+			fi
 		fi
 	fi
+
+select_from_table
 }
 
 #***************************************************************************************************************************
