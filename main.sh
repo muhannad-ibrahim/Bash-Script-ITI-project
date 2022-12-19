@@ -4,9 +4,14 @@ export LC_COLLATE=C
 Red='\033[0;31m'
 Green='\033[0;32m'
 DefaultColor='\033[0m'
+PS3="Hit ur choice : "
+clear;
 
+		echo "******************************************************"
+		echo "*                  Main Menu of DBMS                 *"
+		echo "******************************************************"
 function main_menu {
-	COLUMNS=12
+	COLUMNS=12               # Set the select menu to appear on separate lines.
 	select choice in 'Create Database' 'List Databases' 'Connect To Database' 'Drop Databse' 'Exit'
 	do
 	case $REPLY in
@@ -20,22 +25,21 @@ function main_menu {
 			;;
 		5) clear ; exit 
 			;;
-		*) echo -e $Red"Invaild choice"$DefaultColor
+		*) echo -e $Red"Invaild choice."$DefaultColor
 	esac
 	done
 }
 
 function connect_database {
-	# read -p "Enter name of the database you want to Use: " dbName
-	echo -n "Enter name of the database you want to Use : "
+	echo -n "Enter the name of the database you want to Use : "
 	read dbName
 	cd ~/Bash_project/$dbName 2>> /dev/null	
-	if [[ $? == 0 ]] #for checking if it's exist or not
+	if [[ $? == 0 ]] #for checking if database exists or not
 	then 	
-		echo -e $Green"Connected to $dbName successfully"$DefaultColor
+		echo -e $Green"Connected to $dbName successfully."$DefaultColor
 		tables_menu
 	else
-		echo -e $Red"Database $dbName wasn't found"$DefaultColor
+		echo -e $Red"Database $dbName wasn't found."$DefaultColor
 		main_menu
 	fi
 }
@@ -43,15 +47,21 @@ function connect_database {
 function create_database {
 	echo -n "Enter name of the database : "
 	read dbName
-	mkdir -p ~/Bash_project/$dbName	
-	
-	if [[ $? == 0 ]] 	#for checking if it's exist or not 	
-	then	
-		echo -e $Green"Database $dbName has been created successfully"$DefaultColor
+	if [[ $dbName != +([a-zA-Z0-9_-]) ]]
+	then
+		echo -e $Red"Only database names with characters, numbers, (-) and (_) are allowed."$DefaultColor
+		create_database
 	else
-		echo -e $Red"Error database $dbName already exists"$DefaultColor
+		mkdir -p ~/Bash_project/$dbName	
+
+		if [[ $? == 0 ]] 	#for checking if it's exist or not 	
+		then	
+			echo -e $Green"Database $dbName has been created successfully"$DefaultColor
+		else
+			echo -e $Red"Error database $dbName already exists"$DefaultColor
+		fi
+		main_menu
 	fi
-	main_menu
 }
 
 function list_databases { 
@@ -119,12 +129,13 @@ function create_table {
 	
 	if [[ $tableName != +([a-zA-Z0-9_-]) ]] # in MySQL there is no naming conventions on tables we can remove this check
 	then	
-		echo -e $Red"Only use characters, numbers dash and underscore"$DefaultColor
+		echo -e $Red"Only use characters, numbers, (-) and (_)."$DefaultColor
 	
 	elif [[ -f ~/Bash_project/$dbName/$tableName ]] #for checking if it's exist or not 	
 	then	
-		echo -e $Red"Error table $tableName already exists"$DefaultColor
-	
+		echo -e $Red"Error table $tableName already exists."$DefaultColor
+		create_table
+		
 	else 
 		sep="|" 		# used to be the seperator between data  
   		rSep="\n"		# used to new line 	
@@ -137,7 +148,7 @@ function create_table {
 		if [[ $columnNumber != +([0-9]) || $columnNumber -eq 0 ]]
 		then
 			echo -e $Red"Number is not correct, please enter a positive number"$DefaultColor
-		
+			create_table
 		else
 			for ((i=1; i<=$columnNumber; i++))
 			do
@@ -145,16 +156,16 @@ function create_table {
 				read colName
 				if [[ $colName != +([a-zA-Z0-9_-]) ]]
 				then
-					echo -e $Red"Enter a vaild column name"$DefaultColor
+					echo -e $Red"Enter a vaild column name."$DefaultColor
 				else
 					echo "Enter column $i Datatype of $colName : "
-					select choice in "str" "int"
+					select choice in "int" "str"
 					do
 						case $REPLY in
-							1) colDataType="str"
+							1) colDataType="int"
 								break
 								;;
-							2) colDataType="int"
+							2) colDataType="str"
 								break
 								;;
 							*) echo -e $Red"Wrong data type"$DefaultColor
@@ -236,7 +247,7 @@ function insert {
 		fieldName=$(awk -F$sep 'NR=='$i' {print $1}' .$tableName)       # instead of using {if NR=='$i' print $1} use shorthand NR=='$i'
  	    	fieldDataType=$( awk -F$sep 'NR=='$i' {print $2}' .$tableName)
 	    	fieldKey=$( awk -F$sep 'NR=='$i' {print $3}' .$tableName)
-	    	echo -e "$fieldName ($fieldDataType) = "
+	    	echo -n "$fieldName ($fieldDataType) = "
 	    	read InsertedData
 
 		if [[ $fieldDataType == "int" ]] 
@@ -244,7 +255,7 @@ function insert {
       			while [[ $InsertedData != +([0-9]) ]]
 			do
         			echo -e $Red"Invalid DataType !!"$DefaultColor
-	        		echo -e "$fieldName ($fieldDataType) = "
+	        		echo -n "$fieldName ($fieldDataType) = "
         			read InsertedData
 			done
 		elif [[ $fieldDataType == "str" ]]
@@ -252,7 +263,7 @@ function insert {
 			while [[ $InsertedData != +([a-zA-Z0-9_-]) ]]
 			do
 				echo -e $Red"Invalid DataType !!"$DefaultColor
-	        		echo -e "$fieldName ($fieldDataType) = "
+	        		echo -n "$fieldName ($fieldDataType) = "
         			read InsertedData
 			done
     		fi
@@ -268,7 +279,7 @@ function insert {
 				else
 			  		break;
 				fi
-				echo -e "$fieldName ($fieldDataType) = "
+				echo -n "$fieldName ($fieldDataType) = "
 				read InsertedData
 		      	done
 		fi
@@ -355,14 +366,20 @@ function update {
 						read newValue
 				      	done
 				fi
-													
-				oldValue=$(awk -F$sep '{if(NR=='$lineNumber'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
-				echo $oldValue
-				
-				sed -i ''$lineNumber's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
-				echo "Row Updated Successfully"
-				tables_menu
-		
+
+				if [[ $isKey == "PK" && `echo $lineNumber | wc -w` -gt 1 ]]
+				then
+					echo "error"
+				else
+					echo $lineNumber | wc -w
+					for LN in $lineNumber
+					do
+						oldValue=$(awk -F$sep '{if(NR=='$LN'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
+						sed -i ''$LN's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
+					done
+					echo -e $Green"Row Updated Successfully."$DefaultColor
+				fi
+				tables_menu		
 			fi
 		fi		
 	fi
@@ -493,7 +510,7 @@ function select_with_condition {
 					if ! [[ $fieldNum -eq 0 ]]
 					then
 						awk -F$sep 'NR=="1" {print $'$fieldNum'}' $tableName >> newfile
-						awk -F$sep '{for(i=1; i<=NF; i++) if($i=="'$value'") print $'$fieldNum' }' $tableName >> newfile
+						awk -F$sep '{for(i=1; i<=NF; i++) if($i=="'$value'" && i=='$fieldNumber') print $'$fieldNum' }' $tableName >> newfile
 						echo `cut -f1 newfile` >> newfile2
 						`rm newfile`
 					else
