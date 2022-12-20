@@ -157,6 +157,10 @@ function create_table {
 				if [[ $colName != +([a-zA-Z0-9_-]) ]]
 				then
 					echo -e $Red"Enter a vaild column name."$DefaultColor
+				elif [[ "$metaData" == *"$colName"* ]]
+				then
+					echo -e $Red"This column ($colName) already exist."$DefaultColor
+					i=$i-1;
 				else
 					echo "Enter column $i Datatype of $colName : "
 					select choice in "int" "str"
@@ -340,9 +344,11 @@ function update {
 				
 			echo -n "Enter name of field you want to assign value to it : "
 			read field
-		
+
 			newField=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$field'") print i}}}' $tableName 2>> /dev/null) #return column number of field entered by user just in first line that contains attributes name
 			
+			typeset -i count
+			count=$(awk -F$sep '{for(i=1;i<=NF;i++) {if($i=="'$value'") print i} }' OS 2>> /dev/null | wc -l)
 			if [[ $newField == "" ]]
 			then
 				echo  -e $Red"cannot find the field"$DefaultColor
@@ -351,8 +357,8 @@ function update {
 				isKey=$(awk -F$sep '{if($1=="'$field'") print $3}' .$tableName 2>> /dev/null)
 				echo -n "Enter name of new value : "
         			read newValue
-
-				if [[ $isKey == "PK" ]] 
+				
+				if [[ $isKey == "PK" && $count -eq 1 ]] 
 				then
 				      	while [[ true ]] 
 					do	
@@ -365,19 +371,31 @@ function update {
 						echo -n "Enter name of new value again : "
 						read newValue
 				      	done
+				elif [[ $isKey == "PK" && $count -gt 1 ]]
+				then
+					echo -e $Red"This value cannot be dublicated, It's a primary key !!"$DefaultColor
+					echo -e $Red"Row hasn't updated!"$DefaultColor
+					tables_menu
 				fi
 
-				if [[ $isKey == "PK" && `echo $lineNumber | wc -w` -gt 1 ]]
-				then
-					echo "error"
-				else
-					echo $lineNumber | wc -w
+				if [[ $count -gt 1 ]]
+				then 
 					for LN in $lineNumber
 					do
 						oldValue=$(awk -F$sep '{if(NR=='$LN'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
 						sed -i ''$LN's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
 					done
+				elif [[ $count -eq 1 ]]
+				then
+					oldValue=$(awk -F$sep '{if(NR=='$lineNumber'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
+					sed -i ''$lineNumber's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
+				fi
+				
+				if [[ $? == 0 ]]
+				then
 					echo -e $Green"Row Updated Successfully."$DefaultColor
+				else 
+					echo -e $Red"Row hasn't updated!"$DefaultColor
 				fi
 				tables_menu		
 			fi
@@ -435,9 +453,9 @@ function select_without_condition {
 	typeset -i TotalFields=$(awk -F "|" 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
 	echo -n "Number of columns : "
 	read NumOfCols
-	if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
+	if [[ $NumOfCols -gt 0 && $NumOfCols -le $TotalFields ]]
 	then
-		for ((i=1; i<=NumOfCols; i++))
+		for ((i=1; i<=$NumOfCols; i++))
 		do
 			echo -n "Enter $i column : "
 			read selectedCols
@@ -453,7 +471,7 @@ function select_without_condition {
 		done
 		numCols=`awk '{ if(NR==1) print NF}' newfile`
 
-		for ((j=1; j<=numCols; j++))
+		for ((j=1; j<=$numCols; j++))
 		do
 			echo `cut -f"$j" -d" " newfile`
 		done
@@ -499,9 +517,9 @@ function select_with_condition {
 			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
 			tables_menu
 		else
-			if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
+			if [[ $NumOfCols -gt 0 && $NumOfCols -le $TotalFields ]]
 			then
-				for ((i=1; i<=NumOfCols; i++))
+				for ((i=1; i<=$NumOfCols; i++))
 				do
 					echo -n "Enter $i selected column name: "
 					read selectedCols
@@ -520,7 +538,7 @@ function select_with_condition {
 				done
 
 				numCols=`awk '{ if(NR==1) print NF}' newfile2`
-				for ((j=1; j<=numCols; j++))
+				for ((j=1; j<=$numCols; j++))
 				do
 					echo `cut -f"$j" -d" " newfile2`
 				done
@@ -598,7 +616,7 @@ function delete_with_condition {
 		else
 			while [[ $lineNumber != "" ]] 
 			do	
-				lineNum=$( awk 'BEGIN{FS="|"} {if ($'$fieldNumber'=="'$value'") print NR }' $tableName | sed -n '1p')
+				lineNum=$( awk -F$sep ' {if ($'$fieldNumber'=="'$value'") print NR }' $tableName | sed -n '1p')
 				sed -i "$lineNum d" ~/Bash_project/$dbName/$tableName
 				lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
 		      	done
