@@ -5,11 +5,16 @@ Red='\033[0;31m'
 Green='\033[0;32m'
 DefaultColor='\033[0m'
 PS3="Hit ur choice : "
+sep="|" 		# used to be the seperator between fields.  
+rSep="\n"		# used to new line 	
+pKey="" 		# used to be primary key
 clear;
 
-		echo "******************************************************"
-		echo "*                  Main Menu of DBMS                 *"
-		echo "******************************************************"
+		echo "**********************************************************************"
+		echo "*                    Database Management System                      *"
+		echo "*                                                                    *"
+		echo "*                            Main Menu                               *"
+		echo "**********************************************************************"
 function main_menu {
 	COLUMNS=12               # Set the select menu to appear on separate lines.
 	select choice in 'Create Database' 'List Databases' 'Connect To Database' 'Drop Databse' 'Exit'
@@ -36,29 +41,33 @@ function connect_database {
 	cd ~/Bash_project/$dbName 2>> /dev/null	
 	if [[ $? == 0 ]] #for checking if database exists or not
 	then 	
+		echo ""
 		echo -e $Green"Connected to $dbName successfully."$DefaultColor
+		echo ""
 		tables_menu
 	else
+		echo ""
 		echo -e $Red"Database $dbName wasn't found."$DefaultColor
+		echo ""
 		main_menu
 	fi
 }
 
 function create_database {
-	echo -n "Enter name of the database : "
+	echo -n "Enter the name of the database : "
 	read dbName
 	if [[ $dbName != +([a-zA-Z0-9_-]) ]]
 	then
 		echo -e $Red"Only database names with characters, numbers, (-) and (_) are allowed."$DefaultColor
 		create_database
 	else
-		mkdir -p ~/Bash_project/$dbName	
 
-		if [[ $? == 0 ]] 	#for checking if it's exist or not 	
+		if ! [[ -d  ~/Bash_project/$dbName ]] 	#for checking if database exists or not 	
 		then	
-			echo -e $Green"Database $dbName has been created successfully"$DefaultColor
+			mkdir -p ~/Bash_project/$dbName	
+			echo -e $Green"Database $dbName has been created successfully."$DefaultColor
 		else
-			echo -e $Red"Error database $dbName already exists"$DefaultColor
+			echo -e $Red"Error!! database $dbName already exists."$DefaultColor
 		fi
 		main_menu
 	fi
@@ -68,34 +77,33 @@ function list_databases {
 	cd ~/Bash_project 2>> /dev/null
 	if [[ $? == 0 ]]
 	then
-		echo "********************* Databases *********************"
+		echo "******************** Databases **********************"
 		echo -e $Green`ls`$DefaultColor
 		echo "*****************************************************"  		
 		main_menu
 	else
-		echo -e $Red"There's no any database to show, Try to create one :)"$DefaultColor
+		echo -e $Red"There's no any database to list, Try to create one :)"$DefaultColor
 		main_menu
 	fi
 }
 
 function drop_database { 
-	echo -n "Enter name of the database you want to drop : "
+	echo -n "Enter the name of the database you want to drop : "
 	read dbName
 	rm -r ~/Bash_project/$dbName 2>> /dev/null	
 	if [[ $? == 0 ]]  	
 	then
-		echo -e $Green"Database $dbName has been dropped successfully"$DefaultColor
+		echo -e $Green"Database $dbName has been dropped successfully."$DefaultColor
 	else
-		echo -e $Red"Database not found"$DefaultColor
+		echo -e $Red"Database not found."$DefaultColor
 	fi
 	main_menu
 }
 
 #***************************************************************************************************************************
-
 function tables_menu {
 		COLUMNS=12
-		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back' 'Exit'
+		select choice in 'Create Table' 'List Tables' 'Drop Table' 'Insert Into Table' 'Select From Table' 'Delete From Table' 'Update Table' 'Back To Main Menu' 'Exit'
 		do
 		case $REPLY in
 			1) clear ; create_table
@@ -117,7 +125,7 @@ function tables_menu {
 				;;
 			9) clear ; exit
 				;;
-			*) echo -e $Red"Invaild choice"$DefaultColor; tables_menu
+			*) echo -e $Red"Invaild choice."$DefaultColor; tables_menu
 		esac
 		done
 }
@@ -127,7 +135,7 @@ function create_table {
 	echo -n "Enter name of the table : "
 	read tableName
 	
-	if [[ $tableName != +([a-zA-Z0-9_-]) ]] # in MySQL there is no naming conventions on tables we can remove this check
+	if [[ $tableName != +([a-zA-Z0-9_-]) ]] # in MySQL there is no naming conventions on tables, but we made our own convnetions.
 	then	
 		echo -e $Red"Only use characters, numbers, (-) and (_)."$DefaultColor
 	
@@ -137,9 +145,6 @@ function create_table {
 		create_table
 		
 	else 
-		sep="|" 		# used to be the seperator between data  
-  		rSep="\n"		# used to new line 	
-  		pKey="" 		# used to be primary key
   		metaData="Field"$sep"Type"$sep"key" # used to collect the tuple of data 
 
 		echo -n "Enter the number of columns : "
@@ -390,7 +395,6 @@ function update {
 					oldValue=$(awk -F$sep '{if(NR=='$lineNumber'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
 					sed -i ''$lineNumber's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
 				fi
-				
 				if [[ $? == 0 ]]
 				then
 					echo -e $Green"Row Updated Successfully."$DefaultColor
@@ -453,7 +457,7 @@ function select_without_condition {
 	typeset -i TotalFields=$(awk -F "|" 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
 	echo -n "Number of columns : "
 	read NumOfCols
-	if [[ $NumOfCols -gt 0 && $NumOfCols -le $TotalFields ]]
+	if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
 	then
 		for ((i=1; i<=$NumOfCols; i++))
 		do
@@ -465,7 +469,7 @@ function select_without_condition {
 			then
 				echo `cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName` >> newfile
 			else
-				echo -e $Red"Enter a correct column Name"$DefaultColor
+				echo -e $Red"Enter a correct number of columns."$DefaultColor
 				select_many_columns
 			fi
 		done
@@ -492,7 +496,6 @@ function select_with_condition {
 		echo -e $Red"Table not found"$DefaultColor
 		tables_menu
 	fi
-	sep="|"
 	
 	typeset -i TotalFields=$(awk -F "|" 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
 	echo -n "Number of columns : "
@@ -517,7 +520,7 @@ function select_with_condition {
 			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
 			tables_menu
 		else
-			if [[ $NumOfCols -gt 0 && $NumOfCols -le $TotalFields ]]
+			if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
 			then
 				for ((i=1; i<=$NumOfCols; i++))
 				do
@@ -532,7 +535,7 @@ function select_with_condition {
 						echo `cut -f1 newfile` >> newfile2
 						`rm newfile`
 					else
-						echo -e $Red"Enter a correct column Name"$DefaultColor
+						echo -e $Red"Enter a correct number of columns."$DefaultColor
 						select_many_columns
 					fi
 				done
