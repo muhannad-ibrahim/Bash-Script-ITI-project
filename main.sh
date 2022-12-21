@@ -389,7 +389,7 @@ function update {
 				      	done
 					while [[ true ]] 
 					do	
-						if [[ $newValue -le 0 ]]
+						if [[ $newValue != +([a-zA-Z_-"\ "]) && $newValue -le 0 ]]
 						then
 					  		echo -e $Red"This value cannot be less than one, It's a primary key !!"$DefaultColor
 						else
