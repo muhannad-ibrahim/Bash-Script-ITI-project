@@ -336,9 +336,9 @@ function update {
 		echo -n "Enter Value of condition field : "
 		read value
 		
-		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
+		columnNumber=$(awk -F$sep -v x="$value" '{if ($'$fieldNumber'==x) print $'$fieldNumber'}' $tableName 2>> /dev/null)
 
-		lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
+		lineNumber=$(awk -F$sep -v x="$value" '{if ($'$fieldNumber'==x) print NR }' $tableName 2>> /dev/null)
 
 		if [[ $columnNumber == "" ]]
 		then
@@ -347,33 +347,33 @@ function update {
 			tables_menu
 		else
 				
-			echo -n "Enter name of field you want to assign value to it : "
+			echo -n "Enter field name to assign value to it : "
 			read field
 
 			newField=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$field'") print i}}}' $tableName 2>> /dev/null) #return column number of field entered by user just in first line that contains attributes name
 			
 			typeset -i count
-			count=$(awk -F$sep '{for(i=1;i<=NF;i++) {if($i=="'$value'") print i} }' $tableName 2>> /dev/null | wc -l)
+			count=$(awk -F$sep -v x="$value" '{for(i=1;i<=NF;i++) {if($i==x) print i} }' $tableName 2>> /dev/null | wc -l)
 			if [[ $newField == "" ]]
 			then
 				echo  -e $Red"cannot find the field"$DefaultColor
 				tables_menu
 			else
 				isKey=$(awk -F$sep '{if($1=="'$field'") print $3}' .$tableName 2>> /dev/null)
-				echo -n "Enter name of new value : "
+				echo -n "Enter new value : "
         			read newValue
+
 				if [[ $isKey == "PK" && $count -eq 1 ]] 
 				then
 				      	while [[ true ]] 
 					do	
-						echo "HOPAA2"
 						if [[ $newValue == `cut -d"|" -f"$newField" ~/Bash_project/$dbName/$tableName | grep -w $newValue` ]]
 						then
 					  		echo -e $Red"This value cannot be dublicated, It's a primary key !!"$DefaultColor
 						else
 					  		break;
 						fi
-						echo -n "Enter name of new value again : "
+						echo -n "Enter new value again : "
 						read newValue
 				      	done
 				elif [[ $isKey == "PK" && $count -gt 1 ]]
@@ -387,12 +387,12 @@ function update {
 					for LN in $lineNumber
 					do
 						oldValue=$(awk -F$sep '{if(NR=='$LN'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
-						sed -i ''$LN's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
+						sed -i "$LN s/$oldValue/$newValue/g" $tableName 2>> /dev/null
 					done
 				elif [[ $count -eq 1 ]]
 				then
 					oldValue=$(awk -F$sep '{if(NR=='$lineNumber'){for(i=1;i<=NF;i++){if(i=='$newField') print $i}}}' $tableName 2>> /dev/null)
-					sed -i ''$lineNumber's/'$oldValue'/'$newValue'/g' $tableName 2>> /dev/null
+					sed -i "$lineNumber s/$oldValue/$newValue/g" $tableName 2>> /dev/null
 				fi
 				if [[ $? == 0 ]]
 				then
@@ -468,8 +468,9 @@ function select_without_condition {
 			then
 				echo `cut -f"$fieldNum" -d"|" ~/Bash_project/$dbName/$tableName` >> newfile
 			else
-				echo -e $Red"Enter a correct number of columns."$DefaultColor
-				select_many_columns
+				echo -e $Red"Enter a correct name of column."$DefaultColor
+				echo -e $Red"Redirect to select with condition option again ..."$DefaultColor
+				select_without_condition
 			fi
 		done
 		numCols=`awk '{ if(NR==1) print NF}' newfile`
@@ -493,10 +494,10 @@ function select_with_condition {
 	if ! [[ -f ~/Bash_project/$dbName/$tableName ]]	
 	then	
 		echo -e $Red"Table not found"$DefaultColor
-		tables_menu
+		select_with_condition
 	fi
 	
-	typeset -i TotalFields=$(awk -F "|" 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
+	typeset -i TotalFields=$(awk -F$sep 'NR==1 {print NF}' ~/Bash_project/$dbName/$tableName)
 	echo -n "Number of columns : "
 	read NumOfCols
 
@@ -514,8 +515,8 @@ function select_with_condition {
 			tables_menu
 		else
 			echo -n "Enter Value of condition field : "
-			read value
-			columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
+			read value 
+			columnNumber=$(awk -F$sep -v x="$value" '{if ($'$fieldNumber'== x) print $'$fieldNumber'}' $tableName 2>> /dev/null)
 			
 			if [[ $columnNumber == "" ]]
 			then
@@ -534,12 +535,14 @@ function select_with_condition {
 						if ! [[ $fieldNum -eq 0 ]]
 						then
 							awk -F$sep 'NR=="1" {print $'$fieldNum'}' $tableName >> newfile
-							awk -F$sep '{for(i=1; i<=NF; i++) if($i=="'$value'" && i=='$fieldNumber') print $'$fieldNum' }' $tableName >> newfile
+							awk -F$sep -v x="$value" '{for(i=1; i<=NF; i++) if($i==x && i=='$fieldNumber') print $'$fieldNum' }' $tableName >> newfile
 							echo `cut -f1 newfile` >> newfile2
 							`rm newfile`
 						else
-							echo -e $Red"Enter a correct number of columns."$DefaultColor
-							select_many_columns
+							clear
+							echo -e $Red"Enter a correct name of column."$DefaultColor
+							echo -e $Red"Redirect to select with condition option again ..."$DefaultColor
+							select_with_condition
 						fi
 					done
 
@@ -612,9 +615,9 @@ function delete_with_condition {
 		echo -n "Enter Value of condition field : "
 		read value
 		
-		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
+		columnNumber=$(awk -F$sep -v x="$value" '{if ($'$fieldNumber'==x) print $'$fieldNumber'}' $tableName 2>> /dev/null)
 
-		lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
+		lineNumber=$(awk -F$sep -v x="$value" '{if ($'$fieldNumber'==x) print NR }' $tableName 2>> /dev/null)
 
 		if [[ $columnNumber == "" ]]
 		then
@@ -624,9 +627,9 @@ function delete_with_condition {
 		else
 			while [[ $lineNumber != "" ]] 
 			do	
-				lineNum=$( awk -F$sep ' {if ($'$fieldNumber'=="'$value'") print NR }' $tableName | sed -n '1p')
+				lineNum=$( awk -F$sep -v x="$value" '{if ($'$fieldNumber'==x) print NR }' $tableName | sed -n '1p')
 				sed -i "$lineNum d" ~/Bash_project/$dbName/$tableName
-				lineNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print NR }' $tableName 2>> /dev/null)
+				lineNumber=$(awk -F$sep -v x="$value" '{if ($'$fieldNumber'==x) print NR }' $tableName 2>> /dev/null)
 		      	done
 	
 			echo -e $Green"Records Deleted Successfully"$DefaultColor
