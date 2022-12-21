@@ -159,13 +159,14 @@ function create_table {
 			do
 				echo -n "Enter column $i Name : "
 				read colName
-				if [[ $colName != +([a-zA-Z0-9_-) ]]
+				if [[ $colName != +([a-zA-Z0-9_-]) ]]
 				then
 					echo -e $Red"Enter a vaild column name."$DefaultColor
+					i=$i-1
 				elif [[ "$metaData" == *"$colName"* ]]
 				then
 					echo -e $Red"This column ($colName) already exist."$DefaultColor
-					i=$i-1;
+					i=$i-1
 				else
 					echo "Enter column $i Datatype of $colName : "
 					select choice in "int" "str"
@@ -261,12 +262,22 @@ function insert {
 
 		if [[ $fieldDataType == "int" ]] 
 		then
-      			while [[ $InsertedData != +([0-9]) ]]
-			do
-        			echo -e $Red"Invalid DataType !!"$DefaultColor
-	        		echo -n "$fieldName ($fieldDataType) = "
-        			read InsertedData
-			done
+			if [[ $fieldKey != "PK" ]]
+			then
+      				while [[ $InsertedData != +([\-0-9]) ]]
+				do
+        				echo -e $Red"Invalid DataType !!"$DefaultColor
+	        			echo -n "$fieldName ($fieldDataType) = "
+        				read InsertedData
+				done
+			else
+				while [[ $InsertedData -le 0 ]]
+				do
+        				echo -e $Red"Invalid DataType !!"$DefaultColor
+	        			echo -n "$fieldName ($fieldDataType) = "
+        				read InsertedData
+				done
+			fi
 		elif [[ $fieldDataType == "str" ]]
 		then
 			while [[ $InsertedData != +([a-zA-Z0-9_-"\ "]) ]]
@@ -282,7 +293,7 @@ function insert {
 		      	while [[ true ]] 
 			do	
 				typeset -i pk=$i-1
-				if [[ $InsertedData == `cut -d"|" -f"$pk" ~/Bash_project/$dbName/$tableName | grep -w $InsertedData` ]]
+				if [[ $InsertedData == `cut -d"|" -f"$pk" ~/Bash_project/$dbName/$tableName | grep -w "$InsertedData"` ]]
 				then
 			  		echo -e $Red"Invalid input for Primary Key !!"$DefaultColor
 				else
@@ -326,7 +337,7 @@ function update {
 	echo -n "Enter name of condition field : "
 	read condition
 
-	fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
+	typeset -i fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
 
 	if [[ $fieldNumber ==  "" ]]
 	then
@@ -351,9 +362,9 @@ function update {
 			read field
 
 			newField=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$field'") print i}}}' $tableName 2>> /dev/null) #return column number of field entered by user just in first line that contains attributes name
-			
 			typeset -i count
-			count=$(awk -F$sep -v x="$value" '{for(i=1;i<=NF;i++) {if($i==x) print i} }' $tableName 2>> /dev/null | wc -l)
+			typeset -i counter 
+			count=$(awk -F$sep -v x="$value" '{for(i=1;i<=NF;i++) {if($i==x && i=="'$fieldNumber'") print i} }' $tableName 2>> /dev/null | wc -l)
 			if [[ $newField == "" ]]
 			then
 				echo  -e $Red"cannot find the field"$DefaultColor
@@ -367,7 +378,7 @@ function update {
 				then
 				      	while [[ true ]] 
 					do	
-						if [[ $newValue == `cut -d"|" -f"$newField" ~/Bash_project/$dbName/$tableName | grep -w $newValue` ]]
+						if [[ $newValue == `cut -d"|" -f"$newField" ~/Bash_project/$dbName/$tableName | grep -w $newValue 2>> /dev/null` ]]
 						then
 					  		echo -e $Red"This value cannot be dublicated, It's a primary key !!"$DefaultColor
 						else
@@ -376,9 +387,21 @@ function update {
 						echo -n "Enter new value again : "
 						read newValue
 				      	done
+					while [[ true ]] 
+					do	
+						if [[ $newValue -le 0 ]]
+						then
+					  		echo -e $Red"This value cannot be less than one, It's a primary key !!"$DefaultColor
+						else
+					  		break;
+						fi
+						echo -n "Enter new value again : "
+						read newValue
+				      	done
 				elif [[ $isKey == "PK" && $count -gt 1 ]]
 				then
-					echo -e $Red"This value cannot be dublicated, It's a primary key !!"$DefaultColor
+					echo $count
+					echo -e $Red"This value cannot ddddbe dublicated, It's a primary key !!"$DefaultColor
 					echo -e $Red"Row hasn't updated!"$DefaultColor
 					tables_menu
 				fi
