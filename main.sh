@@ -159,7 +159,7 @@ function create_table {
 			do
 				echo -n "Enter column $i Name : "
 				read colName
-				if [[ $colName != +([a-zA-Z0-9_-]) ]]
+				if [[ $colName != +([a-zA-Z0-9_-) ]]
 				then
 					echo -e $Red"Enter a vaild column name."$DefaultColor
 				elif [[ "$metaData" == *"$colName"* ]]
@@ -269,7 +269,7 @@ function insert {
 			done
 		elif [[ $fieldDataType == "str" ]]
 		then
-			while [[ $InsertedData != +([a-zA-Z0-9_-]) ]]
+			while [[ $InsertedData != +([a-zA-Z0-9_-"\ "]) ]]
 			do
 				echo -e $Red"Invalid DataType !!"$DefaultColor
 	        		echo -n "$fieldName ($fieldDataType) = "
@@ -353,7 +353,7 @@ function update {
 			newField=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$field'") print i}}}' $tableName 2>> /dev/null) #return column number of field entered by user just in first line that contains attributes name
 			
 			typeset -i count
-			count=$(awk -F$sep '{for(i=1;i<=NF;i++) {if($i=="'$value'") print i} }' OS 2>> /dev/null | wc -l)
+			count=$(awk -F$sep '{for(i=1;i<=NF;i++) {if($i=="'$value'") print i} }' $tableName 2>> /dev/null | wc -l)
 			if [[ $newField == "" ]]
 			then
 				echo  -e $Red"cannot find the field"$DefaultColor
@@ -362,11 +362,11 @@ function update {
 				isKey=$(awk -F$sep '{if($1=="'$field'") print $3}' .$tableName 2>> /dev/null)
 				echo -n "Enter name of new value : "
         			read newValue
-				
 				if [[ $isKey == "PK" && $count -eq 1 ]] 
 				then
 				      	while [[ true ]] 
 					do	
+						echo "HOPAA2"
 						if [[ $newValue == `cut -d"|" -f"$newField" ~/Bash_project/$dbName/$tableName | grep -w $newValue` ]]
 						then
 					  		echo -e $Red"This value cannot be dublicated, It's a primary key !!"$DefaultColor
@@ -382,7 +382,6 @@ function update {
 					echo -e $Red"Row hasn't updated!"$DefaultColor
 					tables_menu
 				fi
-
 				if [[ $count -gt 1 ]]
 				then 
 					for LN in $lineNumber
@@ -501,57 +500,63 @@ function select_with_condition {
 	echo -n "Number of columns : "
 	read NumOfCols
 
-	echo -n "Enter name of condition field : "
-	read condition
-	fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
-
-	if [[ $fieldNumber ==  "" ]]
+	if ! [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
 	then
-		echo  -e $Red"cannot find the field"$DefaultColor
-		tables_menu
+		echo -e $Red"Number of columns you entered is not less than total fields"$DefaultColor
 	else
-		echo -n "Enter Value of condition field : "
-		read value
-		columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
-		
-		if [[ $columnNumber == "" ]]
+		echo -n "Enter name of condition field : "
+		read condition
+		fieldNumber=$(awk -F$sep '{if(NR==1){for(i=1;i<=NF;i++){if($i=="'$condition'") print i}}}' $tableName 2>> /dev/null)
+
+		if [[ $fieldNumber ==  "" ]]
 		then
-			
-			echo  -e $Red"cannot find the vaule you entered"$DefaultColor
+			echo  -e $Red"cannot find the field"$DefaultColor
 			tables_menu
 		else
-			if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
+			echo -n "Enter Value of condition field : "
+			read value
+			columnNumber=$(awk -F$sep '{if ($'$fieldNumber'=="'$value'") print $'$fieldNumber'}' $tableName 2>> /dev/null)
+			
+			if [[ $columnNumber == "" ]]
 			then
-				for ((i=1; i<=$NumOfCols; i++))
-				do
-					echo -n "Enter $i selected column name: "
-					read selectedCols
-
-					fieldNum=$(awk -F$sep 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$selectedCols'") print i}' ~/Bash_project/$dbName/$tableName)
-					if ! [[ $fieldNum -eq 0 ]]
-					then
-						awk -F$sep 'NR=="1" {print $'$fieldNum'}' $tableName >> newfile
-						awk -F$sep '{for(i=1; i<=NF; i++) if($i=="'$value'" && i=='$fieldNumber') print $'$fieldNum' }' $tableName >> newfile
-						echo `cut -f1 newfile` >> newfile2
-						`rm newfile`
-					else
-						echo -e $Red"Enter a correct number of columns."$DefaultColor
-						select_many_columns
-					fi
-				done
-
-				numCols=`awk '{ if(NR==1) print NF}' newfile2`
-				for ((j=1; j<=$numCols; j++))
-				do
-					echo `cut -f"$j" -d" " newfile2`
-				done
-				`rm newfile2`
-
+				
+				echo  -e $Red"cannot find the vaule you entered"$DefaultColor
+				tables_menu
 			else
-				echo -e $Red"Enter a correct column Name"$DefaultColor
+				if [[ NumOfCols -gt 0 && NumOfCols -le $TotalFields ]]
+				then
+					for ((i=1; i<=$NumOfCols; i++))
+					do
+						echo -n "Enter $i selected column name: "
+						read selectedCols
+
+						fieldNum=$(awk -F$sep 'NR==1 {for(i=1; i<=NF; i++) if($i=="'$selectedCols'") print i}' ~/Bash_project/$dbName/$tableName)
+						if ! [[ $fieldNum -eq 0 ]]
+						then
+							awk -F$sep 'NR=="1" {print $'$fieldNum'}' $tableName >> newfile
+							awk -F$sep '{for(i=1; i<=NF; i++) if($i=="'$value'" && i=='$fieldNumber') print $'$fieldNum' }' $tableName >> newfile
+							echo `cut -f1 newfile` >> newfile2
+							`rm newfile`
+						else
+							echo -e $Red"Enter a correct number of columns."$DefaultColor
+							select_many_columns
+						fi
+					done
+
+					numCols=`awk '{ if(NR==1) print NF}' newfile2`
+					for ((j=1; j<=$numCols; j++))
+					do
+						echo `cut -f"$j" -d" " newfile2`
+					done
+					`rm newfile2`
+
+				else
+					echo -e $Red"Enter a correct column Name"$DefaultColor
+				fi
 			fi
 		fi
 	fi
+	
 
 select_from_table
 }
